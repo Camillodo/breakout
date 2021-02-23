@@ -34,6 +34,29 @@ const racketY = (canvas.height-racketHeight);
 const gameOverNotify = document.querySelector('.game-over-notify');
 
 
+//definition des éléments briques
+//nombre de rangées
+const brickRowCount = 5;
+//nombre de colonnes
+const brickColumnCount = 8;
+//largeur d'un brique
+const brickWidth = 75;
+//hauteur d'un brique
+const brickHeight = 25;
+
+const brickPadding = 10;
+const brickOffsetTop = 30;
+const brickOffsetLeft = 30;
+
+//on créé le tableau de bicques qui est un tableau dans un tableau
+// on y stocke les coordonnees de depart du dessin des briques qu'on incrementera plus tard
+const bricks = [];
+for(let col=0; col<brickColumnCount; col++) {
+  bricks[col] = [];
+  for(let row=0; row<brickRowCount; row++) {
+    bricks[col][row] = { x: 0, y: 0 };
+  }
+}
 
 /*------------------------------------------------------------------EVENT LISTENERS------------------------------------------------------------------*/
 let rightPressed = false;
@@ -72,7 +95,7 @@ const drawRacket = ()=>{
   ctx.fillStyle = "black";
   ctx.fill();
   ctx.closePath();
-  }
+}
 
 //une fonction qui ne fait que dessiner la boule
 const drawBall = (color)=> {
@@ -83,58 +106,82 @@ const drawBall = (color)=> {
   ctx.closePath();
 }
 
-//Une autre plus pour le jeu
+//fonction pour dessiner les briques
+
+//meme principe que pour le tableau de données briques en haut on boucles les rangées dans les colonnes
+const drawBricks=() =>{
+  for(let col=0; col<brickColumnCount; col++) {
+    for(let row=0; row<brickRowCount; row++) {
+      // création de chaque briques avec les dimensions qui va nous permettre de "décaler" chaque briques
+      let brickX = (col*(brickWidth+brickPadding))+brickOffsetLeft;
+      let brickY = (row*(brickHeight+brickPadding))+brickOffsetTop;
+      //l'incrémentation de la position sur x et sur y donne les coordonnées pour chaque brique créée
+      bricks[col][row].x = brickX;
+      bricks[col][row].y = brickY;
+      //le rendu graphique su rle canvas
+      ctx.beginPath();
+      ctx.rect(brickX, brickY, brickWidth, brickHeight);
+      ctx.fillStyle = "#0095DD";
+      ctx.fill();
+      ctx.closePath();
+    }
+  }
+}
+
+// fonction principales du jeu
 const draw = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBall("blue");
-  drawRacket()
+  drawRacket();
+  drawBricks()
   x += dx;
   y += dy;
-
-//Si la valeur x de la position de la balle est inférieure à zéro, on change la direction du mouvement sur l'axe x en le rendant égal à son inverse
-//Si la position en x de la balle est supérieure à  la largeur du canvas, on inverse encore la vitesse de la balle.
+  
+  //Si la valeur x de la position de la balle est inférieure à zéro, on change la direction du mouvement sur l'axe x en le rendant égal à son inverse
+  //Si la position en x de la balle est supérieure à  la largeur du canvas, on inverse encore la vitesse de la balle.
   if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
     dx = -dx;
-};
+  };
   //meme principe pour l'axe y a la difference qu'on implemente un game over
   //on garde la meme condition générale si la position de la balle sur y est inferieur a la taille de la balle on inverse sa courbe et la balle rebondit
   if(y + dy < ballRadius) {
     dy = -dy;
-//Seulement, si la position est superieur a la hauteur du canvas moins la taille de la balle :
-//ON OUBLIE PAS QUE LE CANVAS COMMENCE EN HAUT A GAUCHE
-} else if(y + dy > canvas.height-ballRadius) {
+    //Seulement, si la position est superieur a la hauteur du canvas moins la taille de la balle :
+    //ON OUBLIE PAS QUE LE CANVAS COMMENCE EN HAUT A GAUCHE
+  } else if(y + dy > canvas.height-ballRadius) {
     //pour simuler le rebond sur la raquette il faut vérifier si le centre de la balle se trouve dans la zone de la raquette
     //si la position de x est superieure au début de la position de la raquette  et qu'elle est inferieure la longueur de la raquette c'est qu'ell est dans la bonne zone
     if(x > racketX && x < racketX + racketWidth) {
-        dy = -dy;
+      dy = -dy;
     }
     //sinon c'est que la position y de la balle est superieure a la hauteur de canvas c'est qu'elle sorti du canvas donc la partie est perdue, on alerte game over et on reload
     else {
-        gameOverNotify.style.display="flex";
-        location.reload();
-        //clearInterval(interval);
+      //on rend visible le texte game over avant le rechargement de la page en agissant sur son display directement
+      gameOverNotify.style.display="flex";
+      location.reload();
+      //clearInterval(interval);
     }
-}
-
+  }
+  
   //si la touche droite est préssée la position de la raquette (a la base au milieu de l'axe X) bouge vers la droite de sa taille divisée par 10, on ajoute une condition à la condition
   //si la taille de la raquette et sa position est superieure à la largeur du canvas donc si elle sort du canvas on lui assigne sa position max comme etant la la largeur du canvas moins la taille de la raquette
   if(rightPressed) {
     //gere la velocité
     racketX += racketWidth/10;
     if (racketX + racketWidth > canvas.width){
-        racketX = canvas.width - racketWidth;
+      racketX = canvas.width - racketWidth;
     }
-}
-//pareil pour la gauche
-else if(leftPressed) {
+  }
+  //pareil pour la gauche
+  else if(leftPressed) {
     racketX -= racketWidth/10;
     if (racketX < 0){
-        racketX = 0;
+      racketX = 0;
     }
-}
+  }
 };
 
 
-const interval = setInterval(draw, 10);
+const interval = setInterval(draw, 8);
 
 
