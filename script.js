@@ -24,8 +24,8 @@ let dy = -2;
 const ballRadius = 15
 
 //definition de la taille de la raquette
-const racketWidth = 90;
-const racketHeight = 15;
+const racketWidth = 100;
+const racketHeight = 25;
 //pour la position de la racket sur l'axe x, meme idee que pour la balle, on la place au milieu donc on divise par 2 la taille du canvas moins la largeur de la raquette
 let racketX = (canvas.width-racketWidth)/2;
 //position y meme principe sauf que la position est tout en bas de l'axe y- la hauteur de la raquette pour que celle ci soit visible
@@ -36,13 +36,13 @@ const gameOverNotify = document.querySelector('.game-over-notify');
 
 //definition des éléments briques
 //nombre de rangées
-const brickRowCount = 5;
+const brickRowCount = 6;
 //nombre de colonnes
-const brickColumnCount = 8;
+const brickColumnCount = 6;
 //largeur d'un brique
-const brickWidth = 75;
+const brickWidth = 120;
 //hauteur d'un brique
-const brickHeight = 25;
+const brickHeight = 30;
 
 const brickPadding = 10;
 const brickOffsetTop = 30;
@@ -50,11 +50,12 @@ const brickOffsetLeft = 30;
 
 //on créé le tableau de bicques qui est un tableau dans un tableau
 // on y stocke les coordonnees de depart du dessin des briques qu'on incrementera plus tard
-const bricks = [];
+// on indique de base le isTouched a 1 pour que la brique apparaisse
+let bricks = [];
 for(let col=0; col<brickColumnCount; col++) {
   bricks[col] = [];
   for(let row=0; row<brickRowCount; row++) {
-    bricks[col][row] = { x: 0, y: 0 };
+    bricks[col][row] = { x: 0, y: 0, isTouched: 1 };
   }
 }
 
@@ -84,10 +85,41 @@ const keyUpHandler = (event)=>{
   }
 };
 
+const mouseMoveHandler = (event)=>{
+  //relative x est la position de la souris dans sur l'axe X(clientX) moins la distance entre le bord gauche du canvas et le bord gauche de la fenetre
+  let relativeX = event.clientX - canvas.offsetLeft;
+  if(relativeX > 0 && relativeX < canvas.width) {
+    racketX = relativeX - racketWidth/2;
+    
+  }
+}
+
 //les deux events listener pour les mouvements de clavier
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
+
+//l'event listener pour detecter le mouvement de la souris
+document.addEventListener("mousemove", mouseMoveHandler, false);
+
 /*------------------------------------------------------------------FONCTIONNEMENT------------------------------------------------------------------*/
+
+//collisionDetection permet savoir si un brique a été touchée par la boucles
+//On définit un statut istouched, si il est a 1 la brique est en place
+//cependant si la position x et y dela boule est superieur a la position x et y de la brique
+// on fait alors comme pour les murs on inverse la direction de la balle et on passe le statut de la brique a 0 donc touché
+collisionDetection = ()=> {
+  for(let col=0; col<brickColumnCount; col++) {
+    for(let row=0; row<brickRowCount; row++) {
+      let brick = bricks[col][row];
+      if(brick.isTouched == 1) {
+        if(x > brick.x && x < brick.x+brickWidth && y > brick.y && y < brick.y+brickHeight) {
+          dy = -dy;
+          brick.isTouched = 0;
+        }
+      }
+    }
+  }
+}
 
 const drawRacket = ()=>{
   ctx.beginPath();
@@ -109,21 +141,20 @@ const drawBall = (color)=> {
 //fonction pour dessiner les briques
 
 //meme principe que pour le tableau de données briques en haut on boucles les rangées dans les colonnes
-const drawBricks=() =>{
+function drawBricks() {
   for(let col=0; col<brickColumnCount; col++) {
     for(let row=0; row<brickRowCount; row++) {
-      // création de chaque briques avec les dimensions qui va nous permettre de "décaler" chaque briques
-      let brickX = (col*(brickWidth+brickPadding))+brickOffsetLeft;
-      let brickY = (row*(brickHeight+brickPadding))+brickOffsetTop;
-      //l'incrémentation de la position sur x et sur y donne les coordonnées pour chaque brique créée
-      bricks[col][row].x = brickX;
-      bricks[col][row].y = brickY;
-      //le rendu graphique su rle canvas
-      ctx.beginPath();
-      ctx.rect(brickX, brickY, brickWidth, brickHeight);
-      ctx.fillStyle = "#0095DD";
-      ctx.fill();
-      ctx.closePath();
+      if(bricks[col][row].isTouched == 1) {
+        let brickX = (row*(brickWidth+brickPadding))+brickOffsetLeft;
+        let brickY = (col*(brickHeight+brickPadding))+brickOffsetTop;
+        bricks[col][row].x = brickX;
+        bricks[col][row].y = brickY;
+        ctx.beginPath();
+        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+      }
     }
   }
 }
@@ -131,9 +162,10 @@ const drawBricks=() =>{
 // fonction principales du jeu
 const draw = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBricks();
   drawBall("blue");
   drawRacket();
-  drawBricks()
+  collisionDetection();
   x += dx;
   y += dy;
   
